@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import Repos from './Repos'
 import { fetchMe, logout, type Me } from './api'
 
 type State = { status: 'loading' } | { status: 'anonymous' } | { status: 'ready'; me: Me } | { status: 'error'; message: string }
@@ -38,8 +39,7 @@ export default function App() {
           <button onClick={() => logout(me.csrfToken).then(() => setState({ status: 'anonymous' }))}>Sign out</button>
         </span>
       </header>
-      <p>Signed in. Repo connection and the activity dashboard are coming next.</p>
-      <a href={me.installUrl}>Install the GitHub App on your repos →</a>
+      <Repos me={me} onSignedOut={() => setState({ status: 'anonymous' })} />
     </main>
   )
 }
