@@ -1,0 +1,21 @@
+{
+  "name": "repo-sentinel",
+  "private": true,
+  "version": "0.1.0",
+  "description": "GitHub App bot: reacts to repo events, applies rules, writes back to GitHub and notifies Slack.",
+  "workspaces": ["server", "web"],
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "dev": "npm-run-all --parallel dev:server dev:web",
+    "dev:server": "npm run dev -w server",
+    "dev:web": "npm run dev -w web",
+    "build": "npm run build -w web && npm run build -w server",
+    "start": "npm run start -w server",
+    "typecheck": "npm run typecheck -w server && npm run build -w web",
+    "lint": "npm run lint -w web",
+    "test": "npm run test -w server"
+  },
+  "devDependencies": {
+    "npm-run-all2": "^8.0.0"
+  }
+}
