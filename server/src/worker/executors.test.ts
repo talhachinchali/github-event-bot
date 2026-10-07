@@ -6,7 +6,7 @@ import { ActionError, type ActionContext, type EventRow } from "./types.js";
 
 const event = (over: Partial<EventRow> = {}): EventRow => ({
   id: 11, repoId: 42, eventType: "issues", action: "opened", title: "Login bug", author: "alice",
-  url: "https://github.com/me/app/issues/5", payload: { number: 5, repo: "evil/attacker-controlled" }, attempts: 1, ...over,
+  url: "https://github.com/me/app/issues/5", payload: { number: 5, repo: "evil/attacker-controlled" }, ai: null, attempts: 1, ...over,
 });
 const rule: Rule = { id: 22, repoId: 42, name: "r", enabled: true, eventType: "issues", conditions: [], actions: [], useAi: false, createdAt: new Date() };
 const ctx = (over: Partial<ActionContext> = {}): ActionContext => ({ event: event(), rule, ...over });
@@ -98,5 +98,21 @@ describe("slack executor", () => {
   it("transient Slack failures stay retryable", async () => {
     deps.sendSlack.mockRejectedValue(new ActionError("Slack responded HTTP 503", true));
     await expect(ex.slack({ type: "slack" }, ctx())).rejects.toMatchObject({ retryable: true });
+  });
+});
+
+describe("add_ai_label executor", () => {
+  const ai = (label: string | null) => ({ summary: "s", priority: "high" as const, label: label as "bug" | null });
+  it("applies the label suggested by the AI", async () => {
+    const out = await ex.add_ai_label({ type: "add_ai_label" }, ctx({ ai: ai("bug") }));
+    expect(deps.addLabel).toHaveBeenCalledWith(7, "me/app", 5, "bug");
+    expect(out).toEqual({ detail: { label: "bug", source: "ai" } });
+  });
+  it("is skipped (not failed) when the AI suggested nothing", async () => {
+    expect(await ex.add_ai_label({ type: "add_ai_label" }, ctx({ ai: ai(null) }))).toEqual({ skipped: "AI suggested no label" });
+    expect(deps.addLabel).not.toHaveBeenCalled();
+  });
+  it("is skipped when AI triage was unavailable", async () => {
+    expect(await ex.add_ai_label({ type: "add_ai_label" }, ctx())).toEqual({ skipped: "AI triage unavailable" });
   });
 });

@@ -36,4 +36,13 @@ describe("ruleInputSchema", () => {
     expect(ruleInputSchema.safeParse({ ...ok, conditions: [{ field: "branch", op: "equals", value: "main" }] }).success).toBe(false);
     expect(ruleInputSchema.safeParse({ name: "p", eventType: "push", actions: [{ type: "slack" }], conditions: [{ field: "label", op: "equals", value: "x" }] }).success).toBe(false);
   });
+  it("'add AI label' requires AI to be enabled", () => {
+    const base = { name: "ai", eventType: "issues", actions: [{ type: "add_ai_label" }] };
+    expect(ruleInputSchema.safeParse(base).success).toBe(false);
+    expect(ruleInputSchema.safeParse({ ...base, useAi: true }).success).toBe(true);
+  });
+  it("AI triage is not available for push rules", () => {
+    expect(ruleInputSchema.safeParse({ name: "p", eventType: "push", actions: [{ type: "slack" }], useAi: true }).success).toBe(false);
+    expect(ruleInputSchema.safeParse({ name: "p", eventType: "pull_request", actions: [{ type: "slack" }], useAi: true }).success).toBe(true);
+  });
 });

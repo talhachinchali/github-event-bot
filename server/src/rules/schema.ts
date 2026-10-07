@@ -13,6 +13,8 @@ export const actionSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("add_label"), label: z.string().trim().min(1).max(50) }),
   z.object({ type: z.literal("comment"), body: z.string().trim().min(1).max(2000) }),
   z.object({ type: z.literal("slack") }),
+  // Applies the label suggested by AI triage (restricted to a fixed allow-list). Needs useAi.
+  z.object({ type: z.literal("add_ai_label") }),
 ]);
 
 export const ruleInputSchema = z
@@ -25,6 +27,12 @@ export const ruleInputSchema = z
     useAi: z.boolean().default(false),
   })
   .superRefine((rule, ctx) => {
+    if (rule.actions.some((a) => a.type === "add_ai_label") && !rule.useAi) {
+      ctx.addIssue({ code: "custom", path: ["useAi"], message: "'add AI label' requires AI triage to be enabled" });
+    }
+    if (rule.useAi && rule.eventType === "push") {
+      ctx.addIssue({ code: "custom", path: ["useAi"], message: "AI triage works on issues and pull requests only" });
+    }
     // A push has no issue/PR to label or comment on; only notifications make sense.
     if (rule.eventType === "push" && rule.actions.some((a) => a.type !== "slack")) {
       ctx.addIssue({ code: "custom", path: ["actions"], message: "push rules can only send Slack notifications" });

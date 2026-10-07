@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Rule } from "../rules/schema.js";
 import { actionKey, processEvent, type ProcessDeps } from "./process.js";
-import { ActionError, type EventRow, type Executors } from "./types.js";
+import { ActionError, type AiTriage, type EventRow, type Executors } from "./types.js";
 
 const event = (over: Partial<EventRow> = {}): EventRow => ({
   id: 1, repoId: 42, eventType: "issues", action: "opened", title: "Login bug", author: "alice",
-  url: "https://x", payload: { body: "crashes", labels: [] }, attempts: 1, ...over,
+  url: "https://x", payload: { body: "crashes", labels: [] }, ai: null, attempts: 1, ...over,
 });
 const rule = (over: Partial<Rule> = {}): Rule => ({
   id: 10, repoId: 42, name: "bugs", enabled: true, eventType: "issues",
@@ -21,7 +21,7 @@ let rules: Rule[];
 let deps: ProcessDeps;
 
 beforeEach(() => {
-  executors = { add_label: vi.fn().mockResolvedValue({ detail: { ok: 1 } }), comment: vi.fn().mockResolvedValue(undefined), slack: vi.fn().mockResolvedValue(undefined) };
+  executors = { add_label: vi.fn().mockResolvedValue({ detail: { ok: 1 } }), add_ai_label: vi.fn().mockResolvedValue(undefined), comment: vi.fn().mockResolvedValue(undefined), slack: vi.fn().mockResolvedValue(undefined) };
   recorded = [];
   succeeded = new Set();
   rules = [rule()];
@@ -128,5 +128,69 @@ describe("processEvent", () => {
       deps.loadRules = async () => { throw new Error("db down"); };
       await expect(processEvent(event(), deps)).rejects.toThrow("db down");
     });
+  });
+});
+
+describe("AI triage in processEvent", () => {
+  const triageResult: AiTriage = { summary: "Login blank on Safari", priority: "high", label: "bug" };
+  let triage: ReturnType<typeof vi.fn>;
+  let saveAi: ReturnType<typeof vi.fn>;
+  beforeEach(() => {
+    triage = vi.fn().mockResolvedValue(triageResult);
+    saveAi = vi.fn().mockResolvedValue(undefined);
+    deps.triage = triage as unknown as ProcessDeps["triage"];
+    deps.saveAi = saveAi as unknown as ProcessDeps["saveAi"];
+  });
+  const aiRule = () => rule({ useAi: true, actions: [{ type: "add_ai_label" }, { type: "slack" }] });
+
+  it("does not call the model unless a matched rule opted in", async () => {
+    await processEvent(event(), deps); // default rule has useAi=false
+    expect(triage).not.toHaveBeenCalled();
+    rules = [rule({ useAi: true, conditions: [{ field: "title", op: "contains", value: "nomatch" }] })];
+    await processEvent(event(), deps);
+    expect(triage).not.toHaveBeenCalled(); // opted in, but the rule did not match
+  });
+
+  it("calls the model once, caches the result, records it, and passes it to opted-in rules", async () => {
+    rules = [aiRule()];
+    await processEvent(event(), deps);
+    expect(triage).toHaveBeenCalledTimes(1);
+    expect(saveAi).toHaveBeenCalledWith(1, triageResult);
+    expect(recorded[0]).toMatchObject({ type: "ai_triage", status: "success", ruleId: null, detail: triageResult });
+    const ctxArg = executors.add_ai_label.mock.calls[0]![1];
+    expect(ctxArg.ai).toEqual(triageResult);
+  });
+
+  it("does not leak AI output to rules that did not opt in", async () => {
+    rules = [aiRule(), rule({ id: 11, useAi: false, actions: [{ type: "slack" }] })];
+    await processEvent(event(), deps);
+    const slackCalls = executors.slack.mock.calls;
+    expect(slackCalls.find((c) => c[1].rule.id === 11)![1].ai).toBeUndefined();
+    expect(slackCalls.find((c) => c[1].rule.id === 10)![1].ai).toEqual(triageResult);
+  });
+
+  it("reuses the cached result on a retry (never calls the model twice)", async () => {
+    rules = [aiRule()];
+    await processEvent(event({ ai: triageResult, attempts: 2 }), deps);
+    expect(triage).not.toHaveBeenCalled();
+    expect(executors.add_ai_label.mock.calls[0]![1].ai).toEqual(triageResult);
+  });
+
+  it("an AI failure is recorded but never blocks or fails the event", async () => {
+    rules = [aiRule()];
+    triage.mockRejectedValue(new Error("Gemini responded HTTP 429"));
+    const out = await processEvent(event(), deps);
+    expect(out).toEqual({ status: "done" });
+    expect(recorded[0]).toMatchObject({ type: "ai_triage", status: "failed", error: "Gemini responded HTTP 429" });
+    expect(saveAi).not.toHaveBeenCalled();
+    expect(executors.slack).toHaveBeenCalledTimes(1); // other actions still ran
+    expect(executors.add_ai_label.mock.calls[0]![1].ai).toBeUndefined();
+  });
+
+  it("works without AI configured at all", async () => {
+    rules = [aiRule()];
+    delete deps.triage;
+    expect(await processEvent(event(), deps)).toEqual({ status: "done" });
+    expect(executors.slack).toHaveBeenCalledTimes(1);
   });
 });

@@ -1,5 +1,6 @@
 import { logger } from "../logger.js";
 import { listActiveRules } from "../rules/service.js";
+import { isAiConfigured, triage } from "../ai/triage.js";
 import { MAX_ATTEMPTS, backoffSeconds } from "./backoff.js";
 import { createExecutors } from "./executors.js";
 import { processEvent, type ProcessDeps } from "./process.js";
@@ -23,6 +24,15 @@ export function createWorker(executors: Executors = createExecutors()): Worker {
     executors,
     hasSucceeded: queue.hasSucceeded,
     recordAction: queue.recordAction,
+    saveAi: queue.saveAi,
+    triage: isAiConfigured()
+      ? (ev) =>
+          triage({
+            kind: ev.eventType === "pull_request" ? "pull request" : "issue",
+            title: ev.title,
+            body: typeof ev.payload.body === "string" ? ev.payload.body : "",
+          })
+      : undefined,
   };
 
   let stopped = false;

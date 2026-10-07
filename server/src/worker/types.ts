@@ -10,6 +10,8 @@ export interface EventRow {
   author: string;
   url: string | null;
   payload: Record<string, unknown>;
+  /** Cached AI triage (so retries never call the model again), or null. */
+  ai: AiTriage | null;
   attempts: number;
 }
 

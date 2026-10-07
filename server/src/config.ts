@@ -29,6 +29,9 @@ const schema = z.object({
   GITHUB_APP_SLUG: required("test-app"),
   GITHUB_WEBHOOK_SECRET: required("test-webhook-secret"),
   // PEM stored on one line with literal \n escapes; restore real newlines.
+  // AI triage is optional: without a key, rules with "use AI" simply run without it.
+  GEMINI_API_KEY: z.string().optional().transform((v) => v || undefined),
+  GEMINI_MODEL: z.string().default("gemini-flash-lite-latest"),
   GITHUB_APP_PRIVATE_KEY: required("test-key").transform((s) => s.replace(/\\n/g, "\n")),
 });
 

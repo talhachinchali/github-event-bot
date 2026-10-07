@@ -1,5 +1,5 @@
 import { query } from "../db/index.js";
-import type { EventRow } from "./types.js";
+import type { AiTriage, EventRow } from "./types.js";
 import type { EventType } from "../rules/schema.js";
 
 /** A 'processing' event whose worker vanished (crash, deploy) is reclaimed after this long. */
@@ -7,7 +7,7 @@ export const STALE_LOCK_SECONDS = 300;
 
 interface Row {
   id: number; repo_id: number; event_type: EventType; action: string | null; title: string;
-  author: string; url: string | null; payload: Record<string, unknown>; attempts: number;
+  author: string; url: string | null; payload: Record<string, unknown>; ai: AiTriage | null; attempts: number;
 }
 
 /**
@@ -24,14 +24,14 @@ export async function claimNext(): Promise<EventRow | null> {
          ORDER BY next_attempt_at, id
          FOR UPDATE SKIP LOCKED
          LIMIT 1)
-      RETURNING id, repo_id, event_type, action, title, author, url, payload, attempts`,
+      RETURNING id, repo_id, event_type, action, title, author, url, payload, ai, attempts`,
     [STALE_LOCK_SECONDS],
   );
   const r = rows[0];
   if (!r) return null;
   return {
     id: r.id, repoId: r.repo_id, eventType: r.event_type, action: r.action, title: r.title,
-    author: r.author, url: r.url, payload: r.payload, attempts: r.attempts,
+    author: r.author, url: r.url, payload: r.payload, ai: r.ai, attempts: r.attempts,
   };
 }
 
@@ -83,7 +83,7 @@ export async function hasSucceeded(eventId: number, actionKey: string): Promise<
 }
 
 export async function recordAction(a: {
-  eventId: number; ruleId: number; actionKey: string; type: string;
+  eventId: number; ruleId: number | null; actionKey: string; type: string;
   status: "success" | "failed" | "skipped"; attempt: number; error?: string; detail?: Record<string, unknown>;
 }): Promise<void> {
   // ON CONFLICT: the partial unique index makes a second success for the same action a no-op, even under a race.
@@ -93,4 +93,9 @@ export async function recordAction(a: {
      ON CONFLICT DO NOTHING`,
     [a.eventId, a.ruleId, a.actionKey, a.type, a.status, a.attempt, a.error ? clip(a.error) : null, a.detail ? JSON.stringify(a.detail) : null],
   );
+}
+
+/** Caches the AI result on the event so a retry reuses it instead of calling the model again. */
+export async function saveAi(eventId: number, ai: AiTriage): Promise<void> {
+  await query("UPDATE events SET ai = $2 WHERE id = $1", [eventId, JSON.stringify(ai)]);
 }

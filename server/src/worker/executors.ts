@@ -57,6 +57,14 @@ export function createExecutors(deps: ExecutorDeps = realDeps): Executors {
       return { detail: await deps.postCommentOnce(target.installationId, target.fullName, numberOf(ctx), body, marker) };
     },
 
+    async add_ai_label(_action, ctx) {
+      // The label is one of a fixed allow-list (validated in ai/triage.ts), so untrusted issue text cannot choose it.
+      const label = ctx.ai?.label;
+      if (!label) return { skipped: ctx.ai ? "AI suggested no label" : "AI triage unavailable" };
+      const target = await targetOf(ctx, deps);
+      return { detail: { ...(await deps.addLabel(target.installationId, target.fullName, numberOf(ctx), label)), source: "ai" } };
+    },
+
     async slack(_action, ctx) {
       const url = await deps.getWebhookForRepo(ctx.event.repoId);
       if (!url) throw new ActionError("Slack is not configured: add a webhook URL in Settings", false);
@@ -90,6 +98,7 @@ const dryRun = (type: string) => async () => {
 };
 export const dryRunExecutors: Executors = {
   add_label: dryRun("add_label"),
+  add_ai_label: dryRun("add_ai_label"),
   comment: dryRun("comment"),
   slack: dryRun("slack"),
 };
