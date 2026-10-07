@@ -4,6 +4,7 @@ import { decrypt } from "../auth/crypto.js";
 import { logger } from "../logger.js";
 import { GitHubApiError, listInstallationRepos, listUserInstallations } from "../github/user-api.js";
 import * as repos from "../repos/service.js";
+import { rulesRouter } from "./rules.js";
 
 export const reposRouter = Router();
 
@@ -104,5 +105,7 @@ reposRouter.delete("/:id", async (req, res) => {
   const ok = await repos.disconnectRepo(req.auth!.user.id, id.data);
   res.status(ok ? 200 : 404).json({ ok });
 });
+
+reposRouter.use("/:repoId/rules", rulesRouter);
 
 reposRouter.use(handleGitHubErrors);

@@ -60,3 +60,8 @@ export async function disconnectRepo(userId: number, repoId: number): Promise<bo
   const r = await query("DELETE FROM repos WHERE id = $1 AND owner_user_id = $2", [repoId, userId]);
   return (r.rowCount ?? 0) > 0;
 }
+
+export async function isRepoOwner(userId: number, repoId: number): Promise<boolean> {
+  const { rows } = await query("SELECT 1 FROM repos WHERE id = $1 AND owner_user_id = $2", [repoId, userId]);
+  return rows.length > 0;
+}
