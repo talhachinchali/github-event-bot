@@ -8,6 +8,7 @@ export interface AuthContext {
   sessionId: string;
   csrfToken: string;
   ghTokenEnc: string | null;
+  expiresAt: Date;
   user: { id: number; login: string; name: string | null; avatarUrl: string | null };
 }
 
@@ -34,10 +35,10 @@ export async function createSession(opts: { userId: number; ghToken: string; tok
 
 export async function findSession(token: string): Promise<AuthContext | null> {
   const { rows } = await query<{
-    id: string; csrf_token: string; gh_token_enc: string | null;
+    id: string; csrf_token: string; gh_token_enc: string | null; expires_at: Date;
     user_id: number; login: string; name: string | null; avatar_url: string | null;
   }>(
-    `SELECT s.id, s.csrf_token, s.gh_token_enc, u.id AS user_id, u.login, u.name, u.avatar_url
+    `SELECT s.id, s.csrf_token, s.gh_token_enc, s.expires_at, u.id AS user_id, u.login, u.name, u.avatar_url
        FROM sessions s JOIN users u ON u.id = s.user_id
       WHERE s.id = $1 AND s.expires_at > now()`,
     [sha256(token)],
@@ -48,6 +49,7 @@ export async function findSession(token: string): Promise<AuthContext | null> {
     sessionId: r.id,
     csrfToken: r.csrf_token,
     ghTokenEnc: r.gh_token_enc,
+    expiresAt: r.expires_at,
     user: { id: r.user_id, login: r.login, name: r.name, avatarUrl: r.avatar_url },
   };
 }

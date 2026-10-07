@@ -37,7 +37,7 @@ afterAll(() => {
 beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(sessions.findSession).mockResolvedValue({
-    sessionId: "s", csrfToken: "csrf", ghTokenEnc: encrypt("ghu_token"),
+    sessionId: "s", csrfToken: "csrf", ghTokenEnc: encrypt("ghu_token"), expiresAt: new Date(Date.now() + 3_600_000),
     user: { id: 1, login: "me", name: null, avatarUrl: null },
   });
   vi.mocked(gh.listUserInstallations).mockResolvedValue([installation]);

@@ -5,6 +5,7 @@ import { runMigrations } from "./db/migrate.js";
 import { purgeExpiredSessions } from "./auth/sessions.js";
 import { closePool } from "./db/index.js";
 import { startReconciler } from "./github/reconciler.js";
+import { purgeOldEvents } from "./events/service.js";
 import { createWorker } from "./worker/index.js";
 
 // Apply pending migrations before accepting traffic (idempotent, advisory-locked).
@@ -36,8 +37,9 @@ async function shutdown(signal: string) {
 process.on("SIGTERM", () => void shutdown("SIGTERM"));
 process.on("SIGINT", () => void shutdown("SIGINT"));
 
-// Housekeeping: drop expired sessions hourly.
-setInterval(
-  () => purgeExpiredSessions().catch((err) => logger.warn({ err: err.message }, "session purge failed")),
-  3_600_000,
-).unref();
+// Housekeeping, hourly: drop expired sessions and events older than 30 days (keeps the free database small).
+// The first run waits an hour so a restart never touches the database needlessly.
+setInterval(() => {
+  purgeExpiredSessions().catch((err) => logger.warn({ err: err.message }, "session purge failed"));
+  purgeOldEvents(30).catch((err) => logger.warn({ err: err.message }, "event purge failed"));
+}, 3_600_000).unref();

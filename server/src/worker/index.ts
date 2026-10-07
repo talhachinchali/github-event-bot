@@ -1,3 +1,4 @@
+import { emitChange } from "../events/bus.js";
 import { logger } from "../logger.js";
 import { listActiveRules } from "../rules/service.js";
 import { isAiConfigured, triage } from "../ai/triage.js";
@@ -56,6 +57,7 @@ export function createWorker(executors: Executors = createExecutors()): Worker {
 
   async function handle(ev: EventRow) {
     const log = logger.child({ eventId: ev.id, repoId: ev.repoId, attempt: ev.attempts });
+    emitChange(); // the event just moved to "processing"
     try {
       // A poison event that keeps crashing the process (stale-lock reclaims) must not loop forever.
       if (ev.attempts > MAX_ATTEMPTS) {
@@ -83,6 +85,8 @@ export function createWorker(executors: Executors = createExecutors()): Worker {
         ? queue.markDead(ev.id, (err as Error).message)
         : queue.markRetry(ev.id, (err as Error).message, backoffSeconds(ev.attempts))
       ).catch(() => undefined);
+    } finally {
+      emitChange(); // final state (done / failed / dead) is now in the database: nudge live dashboards
     }
   }
 

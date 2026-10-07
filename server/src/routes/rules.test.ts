@@ -34,7 +34,7 @@ afterAll(() => {
 beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(sessions.findSession).mockResolvedValue({
-    sessionId: "s", csrfToken: "csrf", ghTokenEnc: null, user: { id: 1, login: "me", name: null, avatarUrl: null },
+    sessionId: "s", csrfToken: "csrf", ghTokenEnc: null, expiresAt: new Date(Date.now() + 3_600_000), user: { id: 1, login: "me", name: null, avatarUrl: null },
   });
   vi.mocked(repos.isRepoOwner).mockResolvedValue(true);
 });

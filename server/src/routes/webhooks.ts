@@ -5,6 +5,7 @@ import { logger } from "../logger.js";
 import { normalize } from "../webhooks/normalize.js";
 import * as svc from "../webhooks/service.js";
 import { verifySignature } from "../webhooks/signature.js";
+import { emitChange } from "../events/bus.js";
 import { wakeWorker } from "../worker/signal.js";
 
 export const webhooksRouter = Router();
@@ -95,6 +96,7 @@ webhooksRouter.post("/github", express.raw({ type: "application/json", limit: "5
     }
     log.info({ eventId: id, repo: event.repoFullName, action: event.action }, "event accepted");
     res.json({ status: "accepted", id });
+    emitChange();
     wakeWorker(); // process immediately instead of waiting for a timer
   } catch (err) {
     // Non-2xx tells GitHub the delivery failed, so it stays visible and can be redelivered. Never swallow.

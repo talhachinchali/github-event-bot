@@ -22,7 +22,7 @@ import * as oauth from "../auth/github-oauth.js";
 const authCtx = {
   sessionId: "sess1",
   csrfToken: "csrf-secret",
-  ghTokenEnc: null,
+  ghTokenEnc: null, expiresAt: new Date(Date.now() + 3_600_000),
   user: { id: 1, login: "octocat", name: "Octo", avatarUrl: null },
 };
 

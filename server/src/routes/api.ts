@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { config } from "../config.js";
 import { requireAuth, requireCsrf } from "../auth/middleware.js";
+import { eventsRouter } from "./events.js";
 import { reposRouter } from "./repos.js";
 import { settingsRouter } from "./settings.js";
 
@@ -19,3 +20,4 @@ apiRouter.get("/me", (req, res) => {
 
 apiRouter.use("/repos", reposRouter);
 apiRouter.use("/settings", settingsRouter);
+apiRouter.use("/events", eventsRouter);
