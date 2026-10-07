@@ -1,7 +1,7 @@
 import { logger } from "../logger.js";
 import { listActiveRules } from "../rules/service.js";
 import { MAX_ATTEMPTS, backoffSeconds } from "./backoff.js";
-import { dryRunExecutors } from "./executors.js";
+import { createExecutors } from "./executors.js";
 import { processEvent, type ProcessDeps } from "./process.js";
 import * as queue from "./queue.js";
 import { onWake } from "./signal.js";
@@ -17,7 +17,7 @@ export interface Worker {
   wake(): void;
 }
 
-export function createWorker(executors: Executors = dryRunExecutors): Worker {
+export function createWorker(executors: Executors = createExecutors()): Worker {
   const deps: ProcessDeps = {
     loadRules: listActiveRules,
     executors,

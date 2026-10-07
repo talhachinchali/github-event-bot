@@ -4,6 +4,7 @@ import { createApp } from "./app.js";
 import { runMigrations } from "./db/migrate.js";
 import { purgeExpiredSessions } from "./auth/sessions.js";
 import { closePool } from "./db/index.js";
+import { startReconciler } from "./github/reconciler.js";
 import { createWorker } from "./worker/index.js";
 
 // Apply pending migrations before accepting traffic (idempotent, advisory-locked).
@@ -17,6 +18,9 @@ const server = app.listen(config.PORT, () => {
 // Starts by claiming anything left pending/failed/stale from before a restart, so nothing is lost.
 const worker = createWorker();
 worker.start();
+
+// Ask GitHub to resend webhooks that failed while we were down/asleep (it never retries by itself).
+startReconciler();
 
 // Graceful shutdown (deploys): stop taking requests, let the in-flight event finish, then close the DB.
 let shuttingDown = false;

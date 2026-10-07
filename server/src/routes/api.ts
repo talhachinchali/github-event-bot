@@ -2,6 +2,7 @@ import { Router } from "express";
 import { config } from "../config.js";
 import { requireAuth, requireCsrf } from "../auth/middleware.js";
 import { reposRouter } from "./repos.js";
+import { settingsRouter } from "./settings.js";
 
 // Every /api route requires a session; every mutating one also requires the CSRF header.
 export const apiRouter = Router();
@@ -17,3 +18,4 @@ apiRouter.get("/me", (req, res) => {
 });
 
 apiRouter.use("/repos", reposRouter);
+apiRouter.use("/settings", settingsRouter);

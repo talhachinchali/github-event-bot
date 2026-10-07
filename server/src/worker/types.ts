@@ -13,9 +13,18 @@ export interface EventRow {
   attempts: number;
 }
 
+/** Result of the optional AI triage step (step 8). */
+export interface AiTriage {
+  summary: string;
+  priority: "low" | "medium" | "high" | "critical";
+  label: string | null;
+}
+
 export interface ActionContext {
   event: EventRow;
   rule: Rule;
+  /** Present only when the rule has AI enabled and the model answered. */
+  ai?: AiTriage;
 }
 
 /** Thrown by executors. `retryable: false` = retrying cannot help (e.g. 404/403/422 from GitHub). */

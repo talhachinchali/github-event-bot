@@ -65,3 +65,13 @@ export async function isRepoOwner(userId: number, repoId: number): Promise<boole
   const { rows } = await query("SELECT 1 FROM repos WHERE id = $1 AND owner_user_id = $2", [repoId, userId]);
   return rows.length > 0;
 }
+
+/** Authoritative target for bot actions: read from our DB at execution time, never trusted from an event payload. */
+export async function getRepoTarget(repoId: number): Promise<{ installationId: number; fullName: string } | null> {
+  const { rows } = await query<{ installation_id: number; full_name: string }>(
+    `SELECT r.installation_id, r.full_name FROM repos r JOIN installations i ON i.id = r.installation_id
+      WHERE r.id = $1 AND i.suspended_at IS NULL`,
+    [repoId],
+  );
+  return rows[0] ? { installationId: rows[0].installation_id, fullName: rows[0].full_name } : null;
+}
