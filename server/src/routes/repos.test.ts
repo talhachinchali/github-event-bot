@@ -87,6 +87,20 @@ describe("GET /api/repos", () => {
   });
 });
 
+describe("GET /api/repos/connected", () => {
+  it("is database-only (never calls GitHub) and scoped to the user", async () => {
+    vi.mocked(svc.listConnected).mockResolvedValue([{ id: 100, installationId: 10, fullName: "me/app", enabled: true, createdAt: new Date() }]);
+    const body = await (await call("GET", "/connected")).json();
+    expect(body.connected).toHaveLength(1);
+    expect(svc.listConnected).toHaveBeenCalledWith(1);
+    expect(gh.listUserInstallations).not.toHaveBeenCalled();
+  });
+  it("requires login", async () => {
+    vi.mocked(sessions.findSession).mockResolvedValue(null);
+    expect((await call("GET", "/connected")).status).toBe(401);
+  });
+});
+
 describe("POST /api/repos (connect)", () => {
   it("needs the CSRF token", async () => {
     expect((await call("POST", "", { installationId: 10, repoId: 100 }, null)).status).toBe(403);

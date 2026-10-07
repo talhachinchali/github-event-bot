@@ -27,6 +27,11 @@ function handleGitHubErrors(err: unknown, _req: Request, res: Response, next: Ne
   next(err);
 }
 
+// Connected repos only: database-only and fast (the dashboard uses this for filters and pickers).
+reposRouter.get("/connected", async (req, res) => {
+  res.json({ connected: await repos.listConnected(req.auth!.user.id) });
+});
+
 // Connected repos + repos that could still be connected (live from GitHub).
 reposRouter.get("/", async (req, res) => {
   const token = userToken(req);

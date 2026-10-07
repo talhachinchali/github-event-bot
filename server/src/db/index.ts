@@ -19,7 +19,10 @@ export function getPool(): pg.Pool {
     pool = new pg.Pool({
       connectionString: connectionString(config.DATABASE_URL),
       max: 5,
-      idleTimeoutMillis: 30_000,
+      // Opening a connection is the expensive part (TLS + auth, seconds across regions), so keep warm ones
+      // around for a couple of minutes: a dashboard load fires several requests at once and should reuse them.
+      idleTimeoutMillis: 120_000,
+      keepAlive: true,
       // Neon scales to zero; the first connection after idle can take a few seconds.
       connectionTimeoutMillis: 15_000,
     });

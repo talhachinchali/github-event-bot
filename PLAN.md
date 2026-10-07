@@ -58,7 +58,7 @@ Status legend: [ ] todo, [~] in progress, [x] done
 6. [x] **Worker + rules engine** – queue, retries, matching on title/body/author/labels; startup recovery of stuck `processing` rows
 7. [x] **Actions** – GitHub write-back via installation tokens; Slack notifications; **delivery reconciler**: GitHub does not auto-retry failed webhooks, so poll `GET /app/hook/deliveries` (app JWT) and redeliver failures (covers downtime / free-tier cold starts)
 8. [x] **AI triage** – summary, suggested label, priority; fallback on failure
-9. [ ] **Dashboard** – login, live event/action log, rules editor, repo settings, failures/retry view
+9. [~] **Dashboard** – login, live event/action log, rules editor, repo settings, failures/retry view
 10. [ ] **Tests** – signature, dedupe, rule matching, webhook integration test
 11. [ ] **Deploy** – Render + Neon; GitHub App and Slack app pointed at the live URL
 12. [ ] **Docs** – README, `AI_NOTES.md`, demo repo, test instructions
