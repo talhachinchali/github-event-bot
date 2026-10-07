@@ -10,6 +10,7 @@ import { query } from "./db/index.js";
 import { loadSession } from "./auth/middleware.js";
 import { apiRouter } from "./routes/api.js";
 import { authRouter } from "./routes/auth.js";
+import { webhooksRouter } from "./routes/webhooks.js";
 
 const WEB_DIST = path.resolve(import.meta.dirname, "../../web/dist");
 
@@ -45,6 +46,9 @@ export function createApp() {
       res.status(503).json({ ok: false });
     }
   });
+
+  // Webhooks: mounted before any body/cookie parsing; the route reads the raw body itself.
+  app.use("/webhooks", webhooksRouter);
 
   // Auth + API: never cache, parse cookies, resolve the session.
   const noStore = (_req: Request, res: Response, next: NextFunction) => {
