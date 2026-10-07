@@ -26,3 +26,6 @@ button.link { background: none; border: none; color: #0969da; padding: 0; text-d
 .tag { font-size: 0.75rem; padding: 0.1rem 0.5rem; border-radius: 999px; }
 .tag.on { background: #dafbe1; color: #1a7f37; }
 .tag.off { background: #eaeef2; color: #57606a; }
+.row { display: flex; gap: 0.5rem; margin: 0.5rem 0; }
+.row input { flex: 1; padding: 0.45rem 0.6rem; border: 1px solid #d0d7de; border-radius: 6px; font: inherit; }
+.ok { color: #1a7f37; }

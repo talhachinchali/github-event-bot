@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import Repos from './Repos'
+import Settings from './Settings'
 import { fetchMe, logout, type Me } from './api'
 
 type State = { status: 'loading' } | { status: 'anonymous' } | { status: 'ready'; me: Me } | { status: 'error'; message: string }
@@ -40,6 +41,7 @@ export default function App() {
         </span>
       </header>
       <Repos me={me} onSignedOut={() => setState({ status: 'anonymous' })} />
+      <Settings me={me} onSignedOut={() => setState({ status: 'anonymous' })} />
     </main>
   )
 }

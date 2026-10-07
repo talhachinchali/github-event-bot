@@ -38,3 +38,9 @@ export const connectRepo = (csrf: string, r: { installationId: number; repoId: n
 export const setRepoEnabled = (csrf: string, id: number, enabled: boolean) =>
   request(`/api/repos/${id}`, { method: 'PATCH', body: JSON.stringify({ enabled }) }, csrf)
 export const disconnectRepo = (csrf: string, id: number) => request(`/api/repos/${id}`, { method: 'DELETE' }, csrf)
+
+export const fetchSlackStatus = () => request<{ configured: boolean }>('/api/settings/slack')
+export const saveSlackWebhook = (csrf: string, webhookUrl: string) =>
+  request<{ configured: boolean }>('/api/settings/slack', { method: 'PUT', body: JSON.stringify({ webhookUrl }) }, csrf)
+export const removeSlackWebhook = (csrf: string) => request<{ configured: boolean }>('/api/settings/slack', { method: 'DELETE' }, csrf)
+export const testSlack = (csrf: string) => request<{ ok: boolean }>('/api/settings/slack/test', { method: 'POST' }, csrf)
