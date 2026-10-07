@@ -5,3 +5,12 @@
 }
 body { margin: 0; }
 main { max-width: 720px; margin: 4rem auto; padding: 0 1rem; }
+.bar { display: flex; align-items: center; justify-content: space-between; }
+.who { display: flex; align-items: center; gap: 0.5rem; }
+.who img { border-radius: 50%; }
+.button, button {
+  display: inline-block; padding: 0.5rem 1rem; border-radius: 6px; border: 1px solid #1f2328;
+  background: #1f2328; color: #fff; text-decoration: none; cursor: pointer; font: inherit;
+}
+.who button { background: transparent; color: inherit; padding: 0.25rem 0.6rem; }
+.error { color: #cf222e; }

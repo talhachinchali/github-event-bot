@@ -52,7 +52,7 @@ Status legend: [ ] todo, [~] in progress, [x] done
 
 1. [x] **Scaffold** – monorepo (`server/`, `web/`), TypeScript, lint, `.env.example`, `AGENTS.md`, start `AI_NOTES.md`
 2. [x] **Database** – Neon, migrations, schema
-3. [ ] **Auth** – GitHub App user login, sessions, protected `/api/me`
+3. [x] **Auth** – GitHub App user login, sessions, protected `/api/me`
 4. [ ] **Repos** – list installations/repos the user owns; connect/disconnect (multi-repo)
 5. [ ] **Webhooks** – signature check, dedupe, persistence; `issues`, `pull_request`, `push`
 6. [ ] **Worker + rules engine** – queue, retries, matching on title/body/author/labels
