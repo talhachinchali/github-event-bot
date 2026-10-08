@@ -35,7 +35,12 @@ export default function App() {
 
   // `data` is checked first: a failed background refetch must not replace a working dashboard with an error page.
   if (me.data) {
-    return <Dashboard me={me.data} onSignOut={async () => { await logout().catch(() => undefined); qc.clear(); qc.setQueryData(['me'], null) }} />
+    return <Dashboard me={me.data} onSignOut={async () => {
+      await logout().catch(() => undefined)
+      // Cancel any in-flight me queries, clear cache, and set to null atomically
+      await qc.cancelQueries({ queryKey: ['me'] })
+      qc.setQueryData(['me'], null)
+    }} />
   }
   if (me.isPending) return <div className="mx-auto max-w-5xl space-y-4 p-8"><Skeleton className="h-10 w-64" /><Skeleton className="h-64 w-full" /></div>
   if (me.isError) return <p role="alert" className="p-8 text-destructive">Something went wrong: {me.error.message}</p>
